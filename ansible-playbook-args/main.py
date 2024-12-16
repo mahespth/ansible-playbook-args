@@ -47,7 +47,7 @@ def _enable_parser( file ):
     # Make sure its we are happy with the yaml/json first...
     try:
         playbook_content = yaml.safe_load(raw_content)
-
+    
     except yaml.YAMLError as e:
             log_message(f"Error parsing YAML metadata: {e}")
             sys.exit(1)
@@ -57,6 +57,9 @@ def _enable_parser( file ):
         eprint('Shall I create a new playbook for you?')
         return False
     
+    # if we loaded the playbook then do we lint it ??
+    # if ansible_lint:
+        
     content_lines = raw_content.splitlines()
 
     if os.path.basename(sys.argv[0]) in content_lines[0]:
@@ -88,15 +91,16 @@ def _enable_parser( file ):
                         sort_keys=True,
                         indent=4,
                     ),2).splitlines() + [''] + content_lines[i:]
-
-                # insert here at line i
+                
                 matches.append((i, line.strip()))
                 
                 try:
-                    with open( 'new-'+file, 'w' ) as file:
+                    with open( 'new-'+file, 'w' ) as writer:
       
                         for item in content_lines:
-                            file.write(f"{item}\n")  
+                            writer.write(f"{item}\n")  
+                        
+                        writer.close()
                 
                 except FileNotFoundError:
                     print("Error: The specified file path does not exist.")
@@ -105,8 +109,23 @@ def _enable_parser( file ):
                 except Exception as e:
                     print(f"An unexpected error occurred: {e}")
                                     
-
                 break
+
+        # Make file executable
+        if not os.access(file, os.X_OK):
+
+            try:
+                st = os.stat(file)
+                os.chmod(file, st.st_mode | 0o111)
+
+            except PermissionError:
+                print(f"Error: Permission denied while modifying {file}.")
+
+            except FileNotFoundError:
+                print(f"Error: {file} not found.")
+
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
             
         
 """
